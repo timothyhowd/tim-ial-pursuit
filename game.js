@@ -7,15 +7,38 @@ const ctx = canvas.getContext("2d");
 const W = canvas.width;
 const H = canvas.height;
 
-// Playable area inside the dungeon image
+// Playable area inside the dungeon image. These are the outermost bounds
+// — basically where the stone wall starts — and they're only used as the
+// "escape hatch" clamp when the player is lined up with a doorway (see
+// FLOOR_* below). Every other moment, the tighter floor bounds apply so
+// Tim can't walk up onto the wall itself.
 const PLAY_LEFT = W * 0.117;
 const PLAY_RIGHT = W * 0.895;
 const PLAY_TOP = H * 0.16;
 const PLAY_BOTTOM = H * 0.88;
 
+// Where the wall actually meets the floor in the dungeon art — i.e. the
+// inner seam line, not the outer edge of the wall. Calibrated visually
+// against assets/room-mid-open.png (and room1-*.png, which share the same
+// wall/floor proportions). Keeping movement inside this rect means Tim
+// stays planted on the floor instead of clipping up onto the wall top.
+const FLOOR_LEFT = W * 0.25;
+const FLOOR_RIGHT = W * 0.75;
+const FLOOR_TOP = H * 0.245;
+const FLOOR_BOTTOM = H * 0.785;
+
 // East door target (where the arrow points & where you walk through)
 const E_DOOR_X = W * 0.882;
 const E_DOOR_Y = H * 0.50; // nudged down to align with door art
+
+// Vertical band that counts as "aligned with a doorway" — while Tim's cy
+// is inside this range the x-clamp relaxes out to PLAY_LEFT/PLAY_RIGHT so
+// he can walk into the east door (to exit) and approach the west door
+// from the inside (for arrival). Kept a hair wider than the east door
+// interaction band (|cy - E_DOOR_Y| < 100) so Tim can always reach the
+// trigger zone without bumping the inner wall seam first.
+const DOOR_Y_TOP = E_DOOR_Y - 110;
+const DOOR_Y_BOTTOM = E_DOOR_Y + 110;
 
 const TIM_HEIGHT = 165;
 const NPC_INTERACT_RADIUS = 140;
@@ -58,6 +81,17 @@ function shuffle(arr) {
   return a;
 }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+// "One-way" clamp for bounds that narrow mid-motion — used for the x-clamp
+// when Tim crosses out of the doorway band. If he's already outside the
+// tight floor rect (because he entered through the doorway gap), we only
+// block movement that would push him further into the wall; stepping back
+// toward the allowed range is always fine. This avoids a jarring sideways
+// teleport at the moment the clamp narrows.
+function softClamp(current, next, min, max) {
+  if (current < min) return Math.min(Math.max(next, current), max);
+  if (current > max) return Math.max(Math.min(next, current), min);
+  return clamp(next, min, max);
+}
 
 // ===== Progress (persistent across playthroughs) =====
 // Tracks which prompts the player has already seen and how many runs
@@ -787,8 +821,17 @@ function update() {
   if (keys.ArrowDown) dy += player.speed;
   if (dx && dy) { dx *= 0.7071; dy *= 0.7071; }
 
-  const newCx = clamp(player.cx + dx, PLAY_LEFT + 30, PLAY_RIGHT - 5);
-  const newCy = clamp(player.cy + dy, PLAY_TOP + 30, PLAY_BOTTOM - 10);
+  // Y-clamp: the top/bottom walls are always solid (no doors up/down).
+  const newCy = clamp(player.cy + dy, FLOOR_TOP, FLOOR_BOTTOM);
+  // X-clamp: the left/right walls are solid EXCEPT while Tim is lined up
+  // with the doorway band. Inside that band we fall back to the outer
+  // PLAY_LEFT/PLAY_RIGHT bounds so he can reach the east door's trigger
+  // radius (and walk out) and stand near the west door without clipping
+  // the side walls anywhere else.
+  const inDoorBand = newCy >= DOOR_Y_TOP && newCy <= DOOR_Y_BOTTOM;
+  const xMin = inDoorBand ? PLAY_LEFT + 30 : FLOOR_LEFT;
+  const xMax = inDoorBand ? PLAY_RIGHT - 5 : FLOOR_RIGHT;
+  const newCx = softClamp(player.cx, player.cx + dx, xMin, xMax);
 
   if (room.isTutorial) {
     player.cx = newCx;
