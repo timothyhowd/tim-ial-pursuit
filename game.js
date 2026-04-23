@@ -67,29 +67,62 @@ const progress = (() => {
   const KEY = "tim-ial-pursuit:progress:v1";
   const total = () => CONTENT.personalPrompts.length + CONTENT.workPrompts.length;
   const empty = () => ({ personal: [], work: [], runs: 0 });
-  let state = empty();
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      state = {
-        personal: Array.isArray(parsed.personal) ? parsed.personal : [],
-        work: Array.isArray(parsed.work) ? parsed.work : [],
-        runs: Number.isFinite(parsed.runs) ? parsed.runs : 0,
-      };
-    }
-  } catch (_) { /* localStorage may be unavailable; fall back to in-memory */ }
+
+  // Load the freshest state from localStorage. Called on module init AND
+  // before every read used for UI (title counter, play-again hint) so a
+  // second tab / reload / hidden-tab-restore can't display a stale value.
+  const load = () => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          personal: Array.isArray(parsed.personal) ? parsed.personal : [],
+          work: Array.isArray(parsed.work) ? parsed.work : [],
+          runs: Number.isFinite(parsed.runs) ? parsed.runs : 0,
+        };
+      }
+    } catch (_) { /* localStorage may be unavailable; fall back to in-memory */ }
+    return empty();
+  };
+
+  let state = load();
 
   const persist = () => {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {}
   };
 
-  // If we've seen every prompt in a category, wipe that category so the
-  // next run can start a fresh cycle (otherwise picking would always fall
-  // back to repeats).
-  const recycleIfExhausted = () => {
-    if (state.personal.length >= CONTENT.personalPrompts.length) state.personal = [];
-    if (state.work.length >= CONTENT.workPrompts.length) state.work = [];
+  // Merge another tab's state into ours rather than blindly overwriting,
+  // so no progress is lost if both tabs happened to advance. Prompts are
+  // matched by exact text.
+  const mergeFromStorage = () => {
+    const fresh = load();
+    const mergeList = (a, b) => {
+      const set = new Set(a);
+      for (const item of b) set.add(item);
+      return Array.from(set);
+    };
+    state = {
+      personal: mergeList(state.personal, fresh.personal),
+      work: mergeList(state.work, fresh.work),
+      runs: Math.max(state.runs, fresh.runs),
+    };
+    persist();
+  };
+
+  // Only wipe once BOTH categories are fully seen. Resetting categories
+  // independently caused the smaller pool (personal, 10 prompts) to recycle
+  // noticeably sooner than the larger pool (work, 16), which is exactly what
+  // we want to avoid. Now we keep accumulating seen-state until every prompt
+  // has been visited at least once, then start the whole cycle fresh.
+  const recycleIfAllExhausted = () => {
+    const allPersonal = state.personal.length >= CONTENT.personalPrompts.length;
+    const allWork = state.work.length >= CONTENT.workPrompts.length;
+    if (allPersonal && allWork) {
+      state.personal = [];
+      state.work = [];
+      persist();
+    }
   };
 
   return {
@@ -108,7 +141,11 @@ const progress = (() => {
     runs() { return state.runs; },
     unlocked() { return state.personal.length + state.work.length; },
     total,
-    recycleIfExhausted,
+    recycleIfAllExhausted,
+    // Pull the latest from localStorage before reading, so UI never shows a
+    // stale count when state has changed elsewhere (other tab, prior page
+    // load, etc.).
+    refresh() { mergeFromStorage(); },
     reset() {
       state = empty();
       persist();
@@ -140,27 +177,59 @@ const player = {
   bobActive: false,
 };
 
-// Pick `count` items from `pool`, preferring those whose `prompt` field is not
-// in `seen`. If unseen items don't fill the quota, top up from seen items so we
-// always return exactly `count` (or all available if pool is smaller).
-function pickPreferUnseen(pool, count, seen) {
-  const unseen = pool.filter(p => !seen.has(p.prompt));
-  const seenList = pool.filter(p => seen.has(p.prompt));
-  const picked = shuffle(unseen).slice(0, count);
-  if (picked.length < count) {
-    picked.push(...shuffle(seenList).slice(0, count - picked.length));
+// Pick prompts for a single playthrough, with category-aware rules:
+//   1. By default, 3 unseen personal + 3 unseen work.
+//   2. If a category doesn't have 3 unseen prompts, top up those slots from
+//      the OTHER category's unseen pool, so the player keeps seeing fresh
+//      memories for as long as either pool has anything new to offer.
+//   3. Only if BOTH pools are exhausted do we fall back to repeats (and at
+//      that point `recycleIfAllExhausted` will have reset everything anyway).
+// Each picked prompt keeps its original `kind` (personal/work) so we track
+// seen-state against the correct pool even when it "borrows" a slot.
+function pickPlaythroughPrompts() {
+  const seenP = progress.seenSet("personal");
+  const seenW = progress.seenSet("work");
+  const unseenPersonal = shuffle(
+    CONTENT.personalPrompts.filter(p => !seenP.has(p.prompt)).map(p => ({ ...p, kind: "personal" }))
+  );
+  const unseenWork = shuffle(
+    CONTENT.workPrompts.filter(p => !seenW.has(p.prompt)).map(p => ({ ...p, kind: "work" }))
+  );
+
+  // Step 1: each category takes up to 3 of its own unseen prompts.
+  const personalSlots = unseenPersonal.splice(0, 3);
+  const workSlots = unseenWork.splice(0, 3);
+
+  // Step 2: cross-fill shortfalls from the other category's remaining unseen.
+  while (personalSlots.length < 3 && unseenWork.length > 0) {
+    personalSlots.push(unseenWork.shift());
   }
-  return picked;
+  while (workSlots.length < 3 && unseenPersonal.length > 0) {
+    workSlots.push(unseenPersonal.shift());
+  }
+
+  // Step 3: both pools truly empty? Repeat from seen as a last resort. This
+  // should basically never trigger because recycleIfAllExhausted resets the
+  // state before we get here.
+  const stillShortP = 3 - personalSlots.length;
+  const stillShortW = 3 - workSlots.length;
+  if (stillShortP > 0) {
+    const pool = shuffle(CONTENT.personalPrompts.map(p => ({ ...p, kind: "personal" })));
+    personalSlots.push(...pool.slice(0, stillShortP));
+  }
+  if (stillShortW > 0) {
+    const pool = shuffle(CONTENT.workPrompts.map(p => ({ ...p, kind: "work" })));
+    workSlots.push(...pool.slice(0, stillShortW));
+  }
+
+  return [...personalSlots, ...workSlots];
 }
 
 function startRun() {
-  // Reset any category that's fully seen, so we always have a fresh pool.
-  progress.recycleIfExhausted();
-  const seenP = progress.seenSet("personal");
-  const seenW = progress.seenSet("work");
-  const personals = pickPreferUnseen(CONTENT.personalPrompts, 3, seenP).map(p => ({ ...p, kind: "personal" }));
-  const works = pickPreferUnseen(CONTENT.workPrompts, 3, seenW).map(p => ({ ...p, kind: "work" }));
-  const prompts = shuffle([...personals, ...works]);
+  // Only reset when BOTH categories are fully seen. This keeps personal from
+  // recycling before the player has also seen all of work.
+  progress.recycleIfAllExhausted();
+  const prompts = shuffle(pickPlaythroughPrompts());
   const npcOrder = shuffle(CONTENT.npcs);
 
   // Room 0 = empty tutorial. Rooms 1-6 = NPCs.
@@ -221,6 +290,17 @@ window.addEventListener("keyup", (e) => {
 // If the tab loses focus mid-hold, cancel so the player can't accidentally
 // wipe progress by leaving the page with R held down.
 window.addEventListener("blur", cancelResetHold);
+
+// Keep the in-memory progress state in sync with other tabs / windows.
+// When localStorage is written in another tab, every other tab for this
+// origin gets a `storage` event; refresh progress and re-render whichever
+// counter is currently on screen so they never disagree.
+window.addEventListener("storage", (e) => {
+  if (e.key !== "tim-ial-pursuit:progress:v1") return;
+  progress.refresh();
+  if (state === "title") refreshMemCount();
+  if (state === "playAgain") refreshPlayAgainHint();
+});
 function consume(k) {
   const had = justPressed.has(k);
   justPressed.delete(k);
@@ -240,12 +320,46 @@ const el = {
   playAgain: document.getElementById("playAgain"),
   playYes: document.getElementById("playYes"),
   playNo: document.getElementById("playNo"),
+  playAgainHint: document.getElementById("playAgainHint"),
+  playAgainCount: document.getElementById("playAgainCount"),
   memCount: document.getElementById("memCount"),
   resetHint: document.getElementById("resetHint"),
+  titleVersion: document.getElementById("titleVersion"),
+  credits: document.getElementById("credits"),
+  creditsList: document.getElementById("creditsList"),
 };
+// Render the version string from content.js once at startup; bumping
+// CONTENT.version is enough to update it.
+if (el.titleVersion) el.titleVersion.textContent = CONTENT.version || "";
+
+function renderCredits() {
+  const list = CONTENT.credits || [];
+  const frag = document.createDocumentFragment();
+  for (const entry of list) {
+    const block = document.createElement("div");
+    block.className = "credits-entry";
+    const role = document.createElement("div");
+    role.className = "credits-role";
+    role.textContent = entry.role;
+    block.appendChild(role);
+    for (const name of entry.names) {
+      const n = document.createElement("div");
+      n.className = "credits-name";
+      n.textContent = name;
+      block.appendChild(n);
+    }
+    frag.appendChild(block);
+  }
+  el.creditsList.replaceChildren(frag);
+}
+renderCredits();
 el.titleSub.textContent = CONTENT.subtitle;
 
 function refreshMemCount() {
+  // Always pull the latest state from localStorage before rendering, so
+  // returning to the title from a run (or switching tabs) can't show stale
+  // numbers.
+  progress.refresh();
   // Only surface the counter (and the reset affordance) once the player has
   // completed at least one playthrough OR unlocked at least one memory.
   // First-timers shouldn't be greeted by a 0/26 score or a reset prompt.
@@ -304,10 +418,22 @@ function gotoTitle() {
   el.scroll.classList.add("hidden");
   el.dialogue.classList.add("hidden");
   el.playAgain.classList.add("hidden");
+  if (el.credits) el.credits.classList.add("hidden");
   refreshMemCount();
   // Request dungeon music; it'll start at the first user keypress
   // (browser autoplay policy) and keeps playing into the dungeon.
   music.play("dungeon");
+}
+
+function gotoCredits() {
+  if (state !== "title") return;
+  cancelResetHold();
+  state = "credits";
+  if (el.credits) el.credits.classList.remove("hidden");
+}
+function dismissCredits() {
+  if (el.credits) el.credits.classList.add("hidden");
+  state = "title";
 }
 
 function gotoIntroScroll() {
@@ -423,6 +549,29 @@ function gotoPlayAgainMenu() {
   playAgainSelection = "yes";
   el.playAgain.classList.remove("hidden");
   updatePlayAgainSelection();
+  refreshPlayAgainHint();
+}
+
+function refreshPlayAgainHint() {
+  // Pull the freshest state before rendering so the count can never lag the
+  // progress the player JUST made by finishing this run.
+  progress.refresh();
+  if (!el.playAgainHint || !el.playAgainCount) return;
+
+  const unlocked = progress.unlocked();
+  const total = progress.total();
+
+  // Count line: always shown, big and factual.
+  el.playAgainCount.textContent = `You have unlocked ${unlocked} of ${total} memories!`;
+
+  // Nudge line: celebrate or encourage depending on where they are.
+  if (unlocked >= total) {
+    el.playAgainHint.textContent = `You've discovered every piece of Tim's story.`;
+  } else {
+    const remaining = total - unlocked;
+    el.playAgainHint.textContent =
+      `Play again to hear ${remaining === 1 ? "the last one" : "more of them"}!`;
+  }
 }
 function updatePlayAgainSelection() {
   el.playYes.classList.toggle("selected", playAgainSelection === "yes");
@@ -575,6 +724,17 @@ function update() {
     if (consume(" ") || consume("Enter")) {
       sfx.playSelect();
       gotoIntroScroll();
+    } else if (consume("c") || consume("C")) {
+      sfx.playBlip();
+      gotoCredits();
+    }
+    justPressed.clear(); return;
+  }
+
+  if (state === "credits") {
+    if (consume(" ") || consume("Enter") || consume("Escape")) {
+      sfx.playBlip();
+      dismissCredits();
     }
     justPressed.clear(); return;
   }

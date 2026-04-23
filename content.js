@@ -23,6 +23,23 @@ const CONTENT = {
   title: "Tim-ial Pursuit",
   subtitle: "Help Tim remember who he is",
 
+  // Displayed bottom-left of the title screen. Bump manually on release;
+  // use semver (major.minor.patch) — minor for new content/features, patch
+  // for bug fixes and copy tweaks.
+  version: "v1.0.0",
+
+  // Credits screen. Each entry is one block — a role (rendered uppercase
+  // in accent color) and one or more names. Add/rearrange freely.
+  credits: [
+    { role: "Story", names: ["Timothy J. Howd"] },
+    { role: "Original Artwork", names: ["Timothy J. Howd"] },
+    { role: "Score", names: ["Timothy J. Howd"] },
+    { role: "Game Design", names: ["Timothy J. Howd"] },
+    { role: "Quality Assurance", names: ["Catherine Howd"] },
+    { role: "Chief Playtester", names: ["Catherine Howd"] },
+    { role: "Special Thanks", names: ["Catherine Howd"] },
+  ],
+
   // Shown on the parchment scroll when the game starts. Each entry is one
   // page; press SPACE to advance. Entries can be plain strings or objects
   // like { text: "...", big: true } to render that page at extra-large size.
@@ -50,7 +67,8 @@ const CONTENT = {
 
     "\"This whole time, I wasn't looking for love or fulfillment.\n" +
     "I am uniquely positioned to deliver shareholder value.\n" +
-    "I've got to get back!\"\n\n" +
+    "I've got to get back!\"",
+
     "He logs his imprisonment and time spent recovering from amnesia as PTO.\n" +
     "With a new spring in his step, he heads up the path\n" +
     "and starts his commute back to the office.",
@@ -189,7 +207,7 @@ const CONTENT = {
       prompt: "I could ramble about something forever. Do you know what it is?",
       answer:
         "You love music. Not just the musicians — David Bowie, Kate Bush, The National, and (most recently) Raye — but everything that goes into the music they make. How they wrote the songs. How they recorded them. " +
-        "|| Also, very ironically, you love discussing product management frameworks and mental models. " +
+        "|| Also, very unironically, you love discussing product management frameworks and mental models. " +
         "|| You're an idealist, and your standards can sometimes make you tedious to work with.",
     },
     {

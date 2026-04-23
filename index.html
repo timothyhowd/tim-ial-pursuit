@@ -11,13 +11,32 @@
 
     <!-- Title screen -->
     <div id="title" class="overlay">
+      <!-- Top-left progress block (only visible after first playthrough) -->
+      <div class="titleCorner titleCorner--topLeft">
+        <p class="memcount hidden" id="memCount"></p>
+        <p class="resetHint hidden" id="resetHint">Hold R to reset progress</p>
+      </div>
+
+      <!-- Bottom-left version -->
+      <p class="titleCorner titleCorner--bottomLeft version" id="titleVersion"></p>
+
+      <!-- Bottom-right credits hint -->
+      <p class="titleCorner titleCorner--bottomRight creditsHint" id="creditsHint">Press C for credits</p>
+
       <h1>Tim-ial Pursuit</h1>
       <p class="sub" id="titleSub"></p>
-      <p class="memcount hidden" id="memCount"></p>
-      <p class="resetHint hidden" id="resetHint">Hold R to reset progress</p>
       <p class="ctrl">Arrow keys to move &middot; Space to interact</p>
       <p class="ctrl small">Press M to mute audio</p>
       <p class="start">[ press SPACE to begin ]</p>
+    </div>
+
+    <!-- Credits overlay -->
+    <div id="credits" class="overlay-dim hidden">
+      <div class="credits-card">
+        <h2>Credits</h2>
+        <div class="credits-list" id="creditsList"></div>
+        <p class="ctrl">[ press SPACE or ESC to return ]</p>
+      </div>
     </div>
 
     <!-- Scroll overlay (intro and ending) -->
@@ -42,6 +61,8 @@
     <div id="playAgain" class="overlay-dim hidden">
       <div class="menu-card">
         <h2>Play again?</h2>
+        <p class="memcount-play" id="playAgainCount"></p>
+        <p class="memhint" id="playAgainHint"></p>
         <div class="choices">
           <div id="playYes" class="choice selected">YES</div>
           <div id="playNo" class="choice">NO</div>
