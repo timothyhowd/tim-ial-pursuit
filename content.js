@@ -44,7 +44,7 @@ const CONTENT = {
   // page; press SPACE to advance. Entries can be plain strings or objects
   // like { text: "...", big: true } to render that page at extra-large size.
   introScroll: [
-    "Tim feels himself awaken. His head is pounding.\n" +
+    "Tim's eyes flutter open. His head is pounding.\n" +
     "With a lot of effort, he opens his eyes and finds himself in an unfamiliar room.\n" +
     "In fact, everything is unfamiliar.\n" +
     "He doesn't remember who he is. What he loves. What makes him tick.\n" +
@@ -58,7 +58,7 @@ const CONTENT = {
   // Shown on the parchment scroll after Tim escapes into the meadow.
   endingScroll: [
     "Tim emerges from the dungeon into a beautiful meadow.\n" +
-    "He blinks in the sun. With the return of these memories,\n" +
+    "He blinks in the sun.\n" +
     "it all comes rushing back to him.\n" +
     "His reason for being. His purpose in life.\n" +
     "\"Of course! How could I have forgotten?\"",
@@ -66,7 +66,7 @@ const CONTENT = {
     { text: "\"The shareholders!\"", big: true },
 
     "\"This whole time, I wasn't looking for love or fulfillment.\n" +
-    "I am uniquely positioned to deliver shareholder value.\n" +
+    "I was put on this earth to deliver shareholder value.\n" +
     "I've got to get back!\"",
 
     "He logs his imprisonment and time spent recovering from amnesia as PTO.\n" +
