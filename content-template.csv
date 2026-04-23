@@ -1,0 +1,55 @@
+Section,Field,Description,Default,Your edit (fill in this column)
+Help,_pagination,"For long memories: split across pages by writing `||` between them. Example: `First page of the memory. || Second page. || Third page.` Single-string answers also auto-paginate at sentences once they exceed ~320 chars.",,
+Title,title,Game title shown on opening screen,Tim-ial Pursuit,
+Title,subtitle,One-line tagline shown under the title,Tim has lost the memories that make him who he is.,
+Story,intro_scroll,"Opening story shown on the parchment scroll. ~3-6 lines. Use a blank line for paragraph breaks.","Tim awakens in cold stone, his head pounding.
+
+He cannot remember who he is, what he loves, or how he works.
+Six dungeon-dwellers stand between him and the world above.
+
+Each one holds a piece of him.
+Open the door. Talk to all six. Walk east into the light.",
+Story,ending_scroll,"Closing story shown on the parchment scroll after Tim escapes into the meadow. ~3-6 lines.","Tim emerges into the meadow, blinking in the sun.
+
+The memories settle back into him: who he is, what he loves,
+the way he writes, the way he works, the way he shows up.
+
+He brushes the dust from his glasses, and walks east —
+ready, once more, to deliver shareholder value.",
+Dialogue,question_template,"How Tim phrases his question to each NPC. Use {prompt} as a placeholder.","Hey — do you remember this one?
+""{prompt}""",
+NPC,goblin_name,Display name for the green goblin character,High Heel Goblin,
+NPC,goblin_flavor,"Reaction line the goblin says before delivering Tim's memory. Two lines: a stage direction + a quote.","The goblin balances precariously on a single stiletto.
+""Ohhh, Tim. I remember this one...""",
+NPC,fairy_name,Display name for the cigar-smoking fairy,Jacked Fairy w/ Cigar,
+NPC,fairy_flavor,Fairy's reaction line,"She blows a slow ring of smoke.
+""Sit down, sweetie. Auntie's gonna remind you.""",
+NPC,piggums_name,Display name for the angry pig character,Mean Mr. Piggums,
+NPC,piggums_flavor,Pig's reaction line,"Mr. Piggums snorts derisively.
+""Ugh. Fine. Here's one I happen to remember.""",
+NPC,grandma_name,Display name for the grandma on the ATV,ATV Grandma,
+NPC,grandma_flavor,Grandma's reaction line,"Her engine idles. She kicks up dust.
+""Climb on, kiddo. Lemme tell ya somethin'.""",
+NPC,cheez_name,Display name for the cheese character,Tha Cheez,
+NPC,cheez_flavor,Cheez's reaction line,"His eyes glaze a little redder.
+""Aged like me, you have. Hear me out.""",
+NPC,statue_name,Display name for the blue Statue of Liberty,Blue Smiling Statue of Liberty,
+NPC,statue_flavor,Statue's reaction line,"She lowers her torch to your eye level.
+""Give me your tired, your puzzled, your forgotten.""",
+Personal,personal_1_answer,"Answer for: What's something you love doing outside of work?",,
+Personal,personal_2_answer,"Answer for: What's a recent highlight (trip, event, life update)?",,
+Personal,personal_3_answer,"Answer for: A fun or unexpected fact about you",,
+Personal,personal_4_answer,"Answer for: What your weekends typically look like",,
+Personal,personal_5_answer,"Answer for: Something you're currently excited about or learning",,
+Personal,personal_6_answer,"Answer for: Your 'perfect day' outside of work",,
+Work,work_01_answer,"Answer for: My ideal work environment looks like…",,
+Work,work_02_answer,"Answer for: I prefer… (e.g. in-person vs virtual, calls vs Slack, async vs live)",,
+Work,work_03_answer,"Answer for: I do my best work when…",,
+Work,work_04_answer,"Answer for: One thing that frustrates me at work is…",,
+Work,work_05_answer,"Answer for: The best way to get a quick response from me is…",,
+Work,work_06_answer,"Answer for: The best way to give me feedback is…",,
+Work,work_07_answer,"Answer for: I tend to default to… (e.g. detail vs big picture, speed vs thoroughness)",,
+Work,work_08_answer,"Answer for: I appreciate teammates who…",,
+Work,work_09_answer,"Answer for: One thing I'm working on improving is…",,
+Work,work_10_answer,"Answer for: If I'm quiet in a meeting, it usually means…",,
+Work,work_11_answer,"Answer for: My biggest pet peeve in collaboration is…",,

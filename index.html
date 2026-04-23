@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tim-ial Pursuit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game" width="1024" height="720"></canvas>
+
+    <!-- Title screen -->
+    <div id="title" class="overlay">
+      <h1>Tim-ial Pursuit</h1>
+      <p class="sub" id="titleSub"></p>
+      <p class="ctrl">Arrow keys to move &middot; Space to interact</p>
+      <p class="ctrl small">Press M to mute audio</p>
+      <p class="start">[ press SPACE to begin ]</p>
+    </div>
+
+    <!-- Scroll overlay (intro and ending) -->
+    <div id="scroll" class="overlay-dim hidden">
+      <div class="scroll-inner">
+        <div class="scroll-text" id="scrollText"></div>
+        <div class="scroll-continue">[ press SPACE to continue ]</div>
+      </div>
+    </div>
+
+    <!-- Dialogue box (3-step) -->
+    <div id="dialogue" class="hidden">
+      <div class="portrait" id="portrait"></div>
+      <div class="text">
+        <div class="speaker" id="speakerName"></div>
+        <div class="body" id="dialogueBody"></div>
+        <div class="continue" id="continueHint">[ SPACE ]</div>
+      </div>
+    </div>
+
+    <!-- Play-again menu -->
+    <div id="playAgain" class="overlay-dim hidden">
+      <div class="menu-card">
+        <h2>Play again?</h2>
+        <div class="choices">
+          <div id="playYes" class="choice selected">YES</div>
+          <div id="playNo" class="choice">NO</div>
+        </div>
+        <p class="ctrl">&larr; / &rarr; to choose &middot; SPACE to confirm</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="content.js"></script>
+  <script src="sfx.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+:root {
+  --paper: #f4efe2;
+  --ink: #1a1a1a;
+  --accent: #b4472b;
+  --dim: #6b665b;
+  --bg: #000;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Patrick Hand", "Marker Felt", "Comic Sans MS", "Chalkboard SE", cursive;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#stage {
+  position: relative;
+  aspect-ratio: 1024 / 720;
+  width: min(100vw, calc(100vh * 1024 / 720));
+  height: min(100vh, calc(100vw * 720 / 1024));
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.9);
+  background: #000;
+  overflow: hidden;
+}
+
+canvas#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+}
+
+/* ================= Dialogue ================= */
+
+#dialogue {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 28px;
+  min-height: 220px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 0 2px 0 var(--ink), 8px 12px 0 rgba(0, 0, 0, 0.18);
+  padding: 22px 26px;
+  display: flex;
+  gap: 26px;
+  transition: transform 180ms ease-out, opacity 180ms;
+  z-index: 5;
+}
+
+#dialogue.hidden {
+  transform: translateY(40px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#dialogue .portrait {
+  width: 200px;
+  height: 200px;
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: #fff8e8 center/contain no-repeat;
+  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+#dialogue .text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#dialogue .speaker {
+  font-size: 22px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+
+#dialogue .body {
+  font-size: 34px;
+  line-height: 1.32;
+  flex: 1;
+  white-space: pre-wrap;
+  color: #1a1a1a;
+}
+
+#dialogue.flavor .body {
+  font-style: italic;
+  color: #1a1a1a;
+  font-size: 30px;
+}
+
+#dialogue .continue {
+  text-align: right;
+  color: var(--dim);
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+/* ================= Overlays ================= */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 40px;
+  transition: opacity 200ms;
+  z-index: 8;
+}
+
+.overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.overlay-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9;
+  transition: opacity 220ms;
+}
+
+.overlay-dim.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.overlay h1, .menu-card h2 {
+  font-size: 64px;
+  margin: 0;
+  line-height: 1;
+}
+
+.overlay .sub {
+  font-size: 26px;
+  color: var(--dim);
+  max-width: 720px;
+  margin: 0;
+}
+
+.overlay .ctrl {
+  font-size: 19px;
+  color: var(--dim);
+  margin: 0;
+}
+.overlay .ctrl.small {
+  font-size: 15px;
+  opacity: 0.8;
+}
+
+.overlay .start {
+  margin-top: 14px;
+  font-size: 24px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+/* ================= Scroll ================= */
+
+#scroll .scroll-inner {
+  width: 88%;
+  max-width: 960px;
+  aspect-ratio: 1920 / 1279;
+  background: url('assets/scroll.png') center/contain no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Asymmetric padding: the scroll's curled tongue sits on the right side
+     and the small dangling fold sits at the bottom-right. Push text left and
+     a bit upward so it visually centers over the flat parchment area. */
+  padding: 6% 20% 10% 9%;
+  text-align: center;
+}
+
+.scroll-text {
+  font-size: 22px;
+  line-height: 1.4;
+  white-space: pre-line;
+  color: #1a1a1a;
+  max-width: 100%;
+  /* Cap height so text never bleeds out the top of the parchment if the
+     copy gets long. Anything beyond fits via shrink, not overflow. */
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.scroll-continue {
+  margin-top: 14px;
+  color: #6b665b;
+  font-size: 14px;
+  letter-spacing: 1px;
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+/* ================= Play-again menu ================= */
+
+.menu-card {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 8px 12px 0 rgba(0, 0, 0, 0.4);
+  padding: 40px 70px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.choices {
+  display: flex;
+  gap: 32px;
+  margin-top: 8px;
+}
+
+.choice {
+  font-size: 38px;
+  padding: 12px 34px;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  letter-spacing: 4px;
+  color: var(--dim);
+  transition: all 120ms;
+}
+
+.choice.selected {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(180, 71, 43, 0.1);
+  transform: scale(1.06);
+}
