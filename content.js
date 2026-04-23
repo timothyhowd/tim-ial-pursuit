@@ -21,23 +21,23 @@
 
 const CONTENT = {
   title: "Tim-ial Pursuit",
-  subtitle: "Tim has lost the memories that make him who he is.",
+  subtitle: "Help Tim remember who he is",
 
   // Shown on the parchment scroll when the game starts.
   introScroll:
-    "Tim awakens in cold stone, his head pounding.\n\n" +
-    "He cannot remember who he is, what he loves, or how he works.\n" +
-    "Six dungeon-dwellers stand between him and the world above.\n\n" +
-    "Each one holds a piece of him.\n" +
-    "Open the door. Talk to all six. Walk east into the light.",
+    "Tim awakens in an unfamiliar room, head pounding.\n\n" +
+    "He can't remember anything.\n" +
+    "Not just the recent past, but everything that makes him who he is.\n\n" +
+    "He needs to find the pieces of himself that have been scattered.\n" +
+    "If he can do that, his purpose, his passion, and his reason for being will be restored.",
 
   // Shown on the parchment scroll after Tim escapes into the meadow.
   endingScroll:
     "Tim emerges into the meadow, blinking in the sun.\n\n" +
-    "The memories settle back into him: who he is, what he loves,\n" +
-    "the way he writes, the way he works, the way he shows up.\n\n" +
-    "He brushes the dust from his glasses, and walks east —\n" +
-    "ready, once more, to deliver shareholder value.",
+    "With his core memories restored, he remembers his purpose on this earth.\n" +
+    "\"The shareholders! How could I have forgotten?\"\n\n" +
+    "Tim logs his imprisonment and lost consciousness as PTO-\n" +
+    "and flips open his laptop, ready once again to deliver value.",
 
   // Tim's question to each NPC. The prompts are already written in-character
   // ("Do you remember…?"), so we just speak the prompt as-is.
@@ -45,14 +45,21 @@ const CONTENT = {
 
   // ----------------------------------------------------------
   // The six dungeon-dwellers.
+  //
+  // Each NPC has an `intro`: a short back-and-forth played BEFORE Tim
+  // asks his question. Each step is either { npc: "..." } or { tim: "..." }.
+  // Use `||` inside a step to paginate further if it runs long.
   // ----------------------------------------------------------
   npcs: [
     {
       id: "goblin",
       name: "High Heel Goblin",
       sprite: "assets/npc-goblin.png",
-      flavor:
-        "The goblin balances precariously on a single stiletto.\n\"Ohhh, Tim. I remember this one...\"",
+      intro: [
+        { npc: "The goblin twirls and pirouettes in its $500 stilettos. \"Oh, Tim! You caught me mid-routine.\"" },
+        { tim: "...aren't those bad for your feet?" },
+        { npc: "The goblin grins a pointy little grin. \"Honey, I've suffered worse for fashion. What do you need?\"" },
+      ],
       maxHeight: 200,
       flipX: true,
     },
@@ -60,8 +67,11 @@ const CONTENT = {
       id: "fairy",
       name: "Jacked Fairy w/ Cigar",
       sprite: "assets/npc-fairy.png",
-      flavor:
-        "She blows a slow ring of smoke.\n\"Sit down, sweetie. Auntie's gonna remind you.\"",
+      intro: [
+        { npc: "The uncomfortably jacked fairy coughs a swampy cough. \"Siddown, sweetie. Auntie's been waiting on you.\"" },
+        { tim: "You ever thought about quitting the cigars?" },
+        { npc: "She takes a long, slow drag and blows a swamp-green smoke ring. \"I'll quit when I'm dead, baby. Ask your question.\"" },
+      ],
       maxHeight: 170,
       flipX: true,
     },
@@ -69,8 +79,11 @@ const CONTENT = {
       id: "piggums",
       name: "Mean Mr. Piggums",
       sprite: "assets/npc-piggums.png",
-      flavor:
-        "Mr. Piggums snorts derisively.\n\"Ugh. Fine. Here's one I happen to remember.\"",
+      intro: [
+        { npc: "Mr. Piggums glares at Tim with eyes that should be registered as deadly weapons. \"Ugh.\"" },
+        { tim: "I come in peace, Mr. Piggums. I just need a little help." },
+        { npc: "\"Fine. Make it quick. I've got loathing to get back to.\"" },
+      ],
       maxHeight: 185,
       flipX: true,
     },
@@ -78,24 +91,33 @@ const CONTENT = {
       id: "grandma",
       name: "ATV Grandma",
       sprite: "assets/npc-grandma.png",
-      flavor:
-        "Her engine idles. She kicks up dust.\n\"Climb on, kiddo. Lemme tell ya somethin'.\"",
+      intro: [
+        { npc: "ATV Grandma revs her engine. \"Doc says I cain't lift more'n 10 pounds. One bump and that's a wrap on ATV Grandma.\"" },
+        { tim: "I can help you lift things — but maybe you could help me with one question first?" },
+        { npc: "Grandma cackles. \"Deal, sugar. Fire away.\"" },
+      ],
       maxHeight: 185,
     },
     {
       id: "cheez",
       name: "Tha Cheez",
       sprite: "assets/npc-cheez.png",
-      flavor:
-        "His eyes glaze a little redder.\n\"Aged like me, you have. Hear me out.\"",
+      intro: [
+        { npc: "Tha Cheez's eyes narrow. \"Are you a cop? You gotta tell me if you're a cop.\"" },
+        { tim: "I'm not a cop, Cheez. I just need help remembering something about myself." },
+        { npc: "Tha Cheez studies Tim for a long moment, then shrugs. \"Yeah, alright. I got what you need.\"" },
+      ],
       maxHeight: 195,
     },
     {
       id: "statue",
       name: "Blue Smiling Statue of Liberty",
       sprite: "assets/npc-statue.png",
-      flavor:
-        "She lowers her torch to your eye level.\n\"Give me your tired, your puzzled, your forgotten.\"",
+      intro: [
+        { npc: "The Blue Smiling Statue of Liberty smiles a big blue smile. \"Did you ever feel like you're the sixth idea when five was enough?\"" },
+        { tim: "...no?" },
+        { npc: "The smile doesn't waver. \"Just me then. Okay. You want your memories? I can help.\"" },
+      ],
       maxHeight: 220,
     },
   ],
@@ -105,44 +127,70 @@ const CONTENT = {
   // ----------------------------------------------------------
   personalPrompts: [
     {
-      prompt: "I know there was something I loved doing outside of work… do you remember what it was?",
-      answer: "Playing music — especially writing songs. I love not just music itself, but the craft of making it: songwriting, mixing, mastering, and always learning more about how music gets created.",
+      prompt: "I know there's something I love doing outside of work... do you know what it is?",
+      answer:
+        "The thing that most inspires you, that makes you feel the most alive, is music: listening to it, playing it. The craft of songwriting. " +
+        "|| You have written for over 3,300 days straight — 10 minutes every morning. And you start writing again as soon as you sign out of work. " +
+        "|| You might be almost 40, but you still dream of becoming a rock and roll star.",
     },
     {
-      prompt: "A recent highlight is slipping away from me — do you remember what happened?",
-      answer: "My band just finished recording an EP called \"It Didn't Hit Me Until Today,\" and we're announcing the pre-order next week. I'm really excited to finally share something we've been working on for a while.",
+      prompt: "Have I told you about any recent highlights in my life?",
+      answer:
+        "Your band just finished recording an EP called \"It Didn't Hit Me Until Today.\" This is the culmination of 2+ years' worth of work. You're announcing the pre-order on May 1, 2026. " +
+        "|| You also had to attend a work summit that's *really* messing with your promotion plans.",
     },
     {
-      prompt: "There's an odd fact about me I can't quite recall. Do you remember it?",
-      answer: "I'm on my third eardrum. I've had my right eardrum replaced twice, and it still doesn't work — but honestly, it's not as bad as it used to be.",
+      prompt: "There's an odd fact about me I can't quite recall. Do you know what it is?",
+      answer:
+        "You are on your third eardrum in your right ear. You have had it replaced twice. " +
+        "|| Sometimes when you ask people to repeat themselves, they think you're not listening — but it's because you missed what they said over the constant high-pitched ringing in your head.",
     },
     {
-      prompt: "My weekends used to have a rhythm to them. Do you remember what they looked like?",
-      answer: "Saturdays usually start with yogurt, fruit, and granola, then piano practice or reading. I'll do some to-dos, get lunch with my mom — usually fish and Cajun fries — and spend the evening with friends playing board games or watching a show. || Sundays start with online games with friends in Seattle and England, and later I usually journal, reflect, and get ready for the week ahead.",
+      prompt: "My weekends still have a rhythm to them. Do you know what they look like?",
+      answer:
+        "Saturdays usually start with yogurt, fruit, and granola. Then you practice piano or work on something for the band. " +
+        "|| Depending on the weather, you'll either go for a run or do Yoga with Adriene. " +
+        "|| Once exercise is out of the way, you order salmon and seasoned Cajun fries from New England Seafood and watch a movie with your Mom. " +
+        "|| If your friends are around, you'll get together to work on more band production and then play a board game or watch some TV. " +
+        "|| Sunday morning is another yogurt, fruit, and granola bowl. At 10:00 AM, you meet your regular gaming group and play video games for about 2-2.5 hours. " +
+        "|| Then a midday run. Then lunch — usually a salad, because you ate too much yesterday. " +
+        "|| Sunday afternoon is more piano practice. You wind down by reflecting on the previous week and planning for the next. " +
+        "|| Your therapist thinks you need more variety in your life.",
     },
     {
-      prompt: "I know I'm learning something right now. Do you remember what it is?",
-      answer: "Piano. I've been teaching myself, and even though I've been a musician for a long time, I spent most of my life not being able to read music. Now I can, and I love that.",
+      prompt: "I know I'm learning something right now. Do you know what it is?",
+      answer:
+        "Piano. You're teaching yourself. You're doing one of those \"Grown Adults Learning Child Skill\" books. " +
+        "|| Even though you've been a musician for a long time, you spent most of your life not being able to read music. Now you can, and you're actually pretty proud of it.",
     },
     {
-      prompt: "There's a small thing that always makes me happy. Do you remember what it is?",
-      answer: "Apples and peanut butter at night. It's my favorite way to end the day.",
+      prompt: "There's a small thing that always makes me happy. Do you know what it is?",
+      answer:
+        "Every night you eat sliced apples with peanut butter. You've done this probably 6 out of 7 days a week for years and it never fails to bring you joy.",
     },
     {
-      prompt: "I could ramble about something forever. Do you remember what it is?",
-      answer: "Music, especially songwriting and artists like David Bowie — I could walk through his whole chronology and talk about how he shaped pop music. || I could also go on forever about product management frameworks, and about why science fiction and fantasy build empathy and problem-solving better than most nonfiction.",
+      prompt: "I could ramble about something forever. Do you know what it is?",
+      answer:
+        "You love music. Not just the musicians — David Bowie, Kate Bush, The National, and (most recently) Raye — but everything that goes into the music they make. How they wrote the songs. How they recorded them. " +
+        "|| Also, very ironically, you love discussing product management frameworks and mental models. " +
+        "|| You're an idealist, and your standards can sometimes make you tedious to work with.",
     },
     {
-      prompt: "There's a hobby or interest I always come back to. Do you remember what it is?",
-      answer: "Fantasy and sci-fi novels. I grew up loving them, and they're still one of my favorite ways to escape and recharge.",
+      prompt: "There's a hobby or interest I always come back to. Do you know what it is?",
+      answer:
+        "Fantasy and sci-fi novels. You grew up loving them and you always return to them to escape and recharge. " +
+        "|| There's a lot of science behind the empathy that comes with being a sci-fi fan. It's probably why you grew up so compassionate.",
     },
     {
-      prompt: "There's one kind of adventure I'd never turn down. Do you remember what it is?",
-      answer: "A concert. If someone asks me to go to a concert, I'm in.",
+      prompt: "There's one kind of adventure I'd never turn down. Do you know what it is?",
+      answer:
+        "You will always say yes to a concert. If a friend invites you to see an artist you've never heard of, you are highly likely to say yes.",
     },
     {
-      prompt: "I had a comfort ritual that felt very me. Do you remember what it was?",
-      answer: "Fruit at night, always. Apples with peanut butter, plus things like oranges, watermelon, or pineapple. || My friends know me as the person who brings a little lunchbox with fruit and maybe an iced tea, even if everyone else is ordering pizza.",
+      prompt: "I know I have a comfort ritual that feels very me. Do you know what it is?",
+      answer:
+        "When you go places — especially places where you'll be out for the night — you always bring a lunch pail filled with fruit and healthy snacks. " +
+        "|| You always feel more comfortable if you have an apple, cara cara orange, watermelon, or pineapple nearby.",
     },
   ],
 
@@ -151,68 +199,103 @@ const CONTENT = {
   // ----------------------------------------------------------
   workPrompts: [
     {
-      prompt: "My ideal work environment is fuzzy in my mind. Do you remember what it looks like?",
-      answer: "Honestly, my house. I'm particular about my setup — desk, notes, notebooks, monitors — and I do my best work in a space I can control and optimize.",
+      prompt: "My ideal work environment is fuzzy in my mind. Do you know what it looks like?",
+      answer:
+        "You work from home right now, but whether you're in your house or an office, you are very particular about your space. " +
+        "|| You need a space that you know other people aren't touching, with easy access to pens and notepads.",
     },
     {
-      prompt: "I know I had a preferred way of working with people. Do you remember it?",
-      answer: "I prefer doing my work virtually, but working with people in person when it actually makes sense. For solving real problems, I prefer live conversations or calls over long async back-and-forth.",
+      prompt: "Did I ever tell you about my preferred way of working with people?",
+      answer:
+        "Virtually or in-person, you prefer async communication for context-setting and meetings (calls) for decision-making. " +
+        "|| You used to be very in favor of asynchronous work for most things, but as you've grown older and wiser, you recognize that was just a by-product of pointless meetings and work environments where you couldn't focus on priority tasks. " +
+        "|| Now that you work in a company that respects your time more, you prefer to do real product work — collaborating through demos and whiteboards live with teams.",
     },
     {
-      prompt: "I used to know when I did my best work… do you remember when that is?",
-      answer: "In the mornings. Since I'm on the East Coast, I try to start about two hours before most people so I can get focused work done before meetings begin.",
+      prompt: "I know when I do my best work... do you know when that is?",
+      answer:
+        "You work best in the morning, but honestly you work best any time you have 2+ hours of uninterrupted time. " +
+        "|| You're one of those maniacs who uses the pomodoro technique when you really need to focus, and you find it works for you.",
     },
     {
-      prompt: "Something at work always frustrated me. Do you remember what it was?",
-      answer: "A lack of risk-taking. It frustrates me when people avoid experimenting and then are surprised when things don't improve.",
+      prompt: "Something at work always frustrates me. Do you know what it is?",
+      answer:
+        "You struggle when you're in a work culture with high expectations for results and low tolerance for risk or experimentation. " +
+        "|| Big launches and giant milestones have been obsolete in tech for years at this point — and they're primordial in the world of AI. " +
+        "|| You get frustrated by your inability to clearly articulate that driving results in the world of AI requires a new way of product delivery, where building to learn is key.",
     },
     {
-      prompt: "If someone needed a quick response from me, what worked best?",
-      answer: "Be explicit about why you need it and when. Something like, \"Tim, I need a response from you today because of X.\" || I don't naturally operate in constant quick-response mode, so context helps.",
+      prompt: "If someone needs a quick response from me, do you know what works best?",
+      answer:
+        "You try to be responsive and friendly, but you separate \"response\" from \"action.\" You prefer informal conversation for context-setting (like Slack), and you'll always respond on Slack. " +
+        "|| If someone needs you to take an action, they should be very explicit about the action and by when they need it. " +
+        "|| This isn't because you don't want to help — it's because your role comes with so much context-switching that it's easy for things to slip through the cracks unless you have clear expectations for where you add value.",
     },
     {
-      prompt: "I know there was a best way to give me feedback. Do you remember how?",
-      answer: "Directly. I respond well to clear, straightforward feedback and would rather someone tell me plainly than expect me to read between the lines.",
+      prompt: "I know there's a best way to give me feedback. Do you know what it is?",
+      answer:
+        "Directly. You respond well to clear, straightforward feedback and would rather someone tell you plainly than expect you to read between the lines. " +
+        "|| It's an artifact of your communication style: you are open and direct with feedback, but you recognize that being too direct can sometimes come off as callused. " +
+        "|| Direct feedback works for you, though, because you always take it as someone giving you a thoughtful opportunity to grow.",
     },
     {
-      prompt: "I tended to default in a certain direction at work. Do you remember how?",
-      answer: "Big picture and speed. I care about detail when it matters, but one of my strengths is keeping the bigger picture in sight and helping things move forward quickly.",
+      prompt: "I tend to default in a certain direction at work. Do you know how?",
+      answer:
+        "Big picture and speed. You care about detail when it matters, but one of your strengths is keeping the bigger picture in sight and helping things move forward quickly.",
     },
     {
-      prompt: "There was something I especially appreciated in teammates. Do you remember what it was?",
-      answer: "A willingness to experiment and share what they're learning. I love working with people who try new things and bring those discoveries back to the team.",
+      prompt: "There's something I especially appreciate in teammates. Do you know what it is?",
+      answer:
+        "A willingness to experiment and share what they're learning. You love working with people who are comfortable taking risks, experimenting, and sharing long before they're ready. " +
+        "|| You strive to provide psychological safety for your partners and peers so the team can operate at their best, without the threat or fear of judgment.",
     },
     {
-      prompt: "I was trying to improve something about how I work. Do you remember what it was?",
-      answer: "Being more concise. As I work more with senior leaders, I'm trying to shorten my communication and avoid giving too much context when a sharper answer would do.",
+      prompt: "I'm trying to improve something about how I work. Do you know what it is?",
+      answer:
+        "You need to be more concise. As you work more with senior leaders, you're trying to shorten your communication and avoid giving too much context when a sharper answer would do.",
     },
     {
-      prompt: "If I go quiet in a meeting, do you remember what that usually means?",
-      answer: "Sometimes it just means I don't have anything useful to add and I don't want to speak for the sake of speaking. || But if I was engaged earlier and then go quiet, it usually means I feel like my ideas aren't being meaningfully considered.",
+      prompt: "If I go quiet in a meeting, do you know what that usually means?",
+      answer:
+        "You're actively practicing not speaking in meetings for the sake of meetings. You have a point of view on everything and you're very comfortable sharing it, but you realize that your willingness to fill the silence might mean someone else is missing the chance to speak. " +
+        "|| However, if you were actively engaged earlier and then go quiet, it usually means you feel like your ideas aren't being meaningfully considered.",
     },
     {
-      prompt: "There was one thing in collaboration that always got under my skin. Do you remember what it was?",
-      answer: "Inflexibility. I believe in being rigid on the goal and flexible on the details, so collaboration gets frustrating when people come in attached to one solution and leave no room to explore better options together.",
+      prompt: "There's one thing in collaboration that always gets under my skin. Do you know what it is?",
+      answer:
+        "Inflexibility. You believe in strong outcomes but flexible approaches to meeting those outcomes. " +
+        "|| Collaboration gets frustrating when people come in attached to one solution and leave no room to explore better options together. " +
+        "|| It particularly bothers you when you're accountable for an outcome but forced into an artificial constraint because a team took a goal against building a thing instead of driving a result.",
     },
     {
-      prompt: "I know there was a kind of problem I loved solving. Do you remember which kind?",
-      answer: "Complex problems that other people are hesitant to tackle or haven't solved yet. I tend to gravitate toward the hardest, messiest challenges.",
+      prompt: "I know there's a kind of problem I love solving. Do you know which kind?",
+      answer:
+        "You love complex problems that other people are hesitant to tackle or haven't solved yet. You gravitate toward the hardest, messiest challenges. " +
+        "|| You believe that if a problem had an existing solution, it would have been solved already.",
     },
     {
-      prompt: "If bad news or blockers came up, how did I want people to bring them to me?",
-      answer: "Early. As soon as you know, tell me. I'd rather have the information quickly so we can deal with it, and I also like teams that use retrospectives to understand what happened and improve.",
+      prompt: "If bad news or blockers come up, do you know how I want people to bring them to me?",
+      answer:
+        "Early. As soon as someone learns the bad news, they should tell you. You'd rather have the information quickly so the team can deal with it. " +
+        "|| You try to take a non-judgmental approach to bad news, blockers, or mistakes, but you have particularly high expectations when it comes to identifying how the team will learn and grow from those challenges. " +
+        "|| When the heck is someone going to start doing retros around here?",
     },
     {
-      prompt: "What helped me feel trusted and supported at work?",
-      answer: "Being understood for what I'm actually good at. I feel most trusted when people take the time to learn my capabilities and experience level, and help me grow in real development areas rather than second-guessing basics or just preferring a different style.",
+      prompt: "What helps me feel trusted and supported at work?",
+      answer:
+        "You work best when you're understood for what you're actually good at. " +
+        "|| You feel most trusted when people take the time to learn your capabilities and experience level, and help you grow in real development areas rather than second-guessing basics or just preferring a different style.",
     },
     {
-      prompt: "There's a kind of meeting that drains me fast. Do you remember what kind?",
-      answer: "A meeting with no agenda, no structure, and no clear objective. I need to know what we're trying to get out of the time together.",
+      prompt: "There's a kind of meeting that drains me fast. Do you know what kind?",
+      answer:
+        "A meeting with no agenda, no structure, and no clear objective. You need to know what the attendees are trying to get out of the time together.",
     },
     {
-      prompt: "I made decisions a certain way. Do you remember how?",
-      answer: "Usually quickly, but with care. I'm comfortable making decisions, especially when needed, but I also want customers and partners to feel comfortable and supported in the process.",
+      prompt: "I make decisions a certain way. Do you know how?",
+      answer:
+        "Usually quickly, but with care. You're comfortable making decisions, especially when needed. " +
+        "|| But you also try to be considerate of customers and partners — sometimes you'll slow a decision down more than is natural for you if it will help partners feel comfortable and supported in the process.",
     },
   ],
 };

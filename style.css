@@ -71,6 +71,13 @@ canvas#game {
   border-radius: 6px;
   background: #fff8e8 center/contain no-repeat;
   box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.15);
+  transition: transform 120ms ease-out;
+}
+
+/* When the NPC faces left in-dungeon (flipX), mirror their portrait too so
+   they stay facing Tim across both contexts. */
+#dialogue .portrait.flipped {
+  transform: scaleX(-1);
 }
 
 #dialogue .text {
@@ -87,18 +94,19 @@ canvas#game {
   letter-spacing: 3px;
 }
 
+/* One consistent font/size/color for ALL dialogue — Tim's lines, NPC reactions,
+   and memory answers all share this style. Speaker name + portrait carry the
+   "who's talking" signal. We dropped the old italic flavor style because it
+   fell through to a synthesized-italic fallback font and looked like a totally
+   different typeface, which was jarring. */
 #dialogue .body {
   font-size: 34px;
   line-height: 1.32;
   flex: 1;
   white-space: pre-wrap;
   color: #1a1a1a;
-}
-
-#dialogue.flavor .body {
-  font-style: italic;
-  color: #1a1a1a;
-  font-size: 30px;
+  font-family: inherit;
+  font-style: normal;
 }
 
 #dialogue .continue {
@@ -167,6 +175,17 @@ canvas#game {
 .overlay .ctrl.small {
   font-size: 15px;
   opacity: 0.8;
+}
+
+.overlay .memcount {
+  font-size: 18px;
+  color: var(--accent);
+  margin: 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.overlay .memcount.hidden {
+  display: none;
 }
 
 .overlay .start {

@@ -58,6 +58,59 @@ function shuffle(arr) {
   return a;
 }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// ===== Progress (persistent across playthroughs) =====
+// Tracks which prompts the player has already seen and how many runs
+// they've completed, so we can prefer fresh prompts on each playthrough
+// and surface a "Memories Unlocked" counter on the title screen.
+const progress = (() => {
+  const KEY = "tim-ial-pursuit:progress:v1";
+  const total = () => CONTENT.personalPrompts.length + CONTENT.workPrompts.length;
+  const empty = () => ({ personal: [], work: [], runs: 0 });
+  let state = empty();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state = {
+        personal: Array.isArray(parsed.personal) ? parsed.personal : [],
+        work: Array.isArray(parsed.work) ? parsed.work : [],
+        runs: Number.isFinite(parsed.runs) ? parsed.runs : 0,
+      };
+    }
+  } catch (_) { /* localStorage may be unavailable; fall back to in-memory */ }
+
+  const persist = () => {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (_) {}
+  };
+
+  // If we've seen every prompt in a category, wipe that category so the
+  // next run can start a fresh cycle (otherwise picking would always fall
+  // back to repeats).
+  const recycleIfExhausted = () => {
+    if (state.personal.length >= CONTENT.personalPrompts.length) state.personal = [];
+    if (state.work.length >= CONTENT.workPrompts.length) state.work = [];
+  };
+
+  return {
+    seenSet(kind) { return new Set(state[kind] || []); },
+    markPromptSeen(prompt, kind) {
+      if (!state[kind]) return;
+      if (!state[kind].includes(prompt)) {
+        state[kind].push(prompt);
+        persist();
+      }
+    },
+    completeRun() {
+      state.runs += 1;
+      persist();
+    },
+    runs() { return state.runs; },
+    unlocked() { return state.personal.length + state.work.length; },
+    total,
+    recycleIfExhausted,
+  };
+})();
 function getDrawSize(img, maxH, maxW = 99999) {
   if (!img || !img.complete || !img.naturalWidth) return { w: 60, h: maxH };
   const s = Math.min(maxH / img.naturalHeight, maxW / img.naturalWidth);
@@ -83,9 +136,26 @@ const player = {
   bobActive: false,
 };
 
+// Pick `count` items from `pool`, preferring those whose `prompt` field is not
+// in `seen`. If unseen items don't fill the quota, top up from seen items so we
+// always return exactly `count` (or all available if pool is smaller).
+function pickPreferUnseen(pool, count, seen) {
+  const unseen = pool.filter(p => !seen.has(p.prompt));
+  const seenList = pool.filter(p => seen.has(p.prompt));
+  const picked = shuffle(unseen).slice(0, count);
+  if (picked.length < count) {
+    picked.push(...shuffle(seenList).slice(0, count - picked.length));
+  }
+  return picked;
+}
+
 function startRun() {
-  const personals = shuffle(CONTENT.personalPrompts).slice(0, 3).map(p => ({ ...p, kind: "personal" }));
-  const works = shuffle(CONTENT.workPrompts).slice(0, 3).map(p => ({ ...p, kind: "work" }));
+  // Reset any category that's fully seen, so we always have a fresh pool.
+  progress.recycleIfExhausted();
+  const seenP = progress.seenSet("personal");
+  const seenW = progress.seenSet("work");
+  const personals = pickPreferUnseen(CONTENT.personalPrompts, 3, seenP).map(p => ({ ...p, kind: "personal" }));
+  const works = pickPreferUnseen(CONTENT.workPrompts, 3, seenW).map(p => ({ ...p, kind: "work" }));
   const prompts = shuffle([...personals, ...works]);
   const npcOrder = shuffle(CONTENT.npcs);
 
@@ -155,8 +225,20 @@ const el = {
   playAgain: document.getElementById("playAgain"),
   playYes: document.getElementById("playYes"),
   playNo: document.getElementById("playNo"),
+  memCount: document.getElementById("memCount"),
 };
 el.titleSub.textContent = CONTENT.subtitle;
+
+function refreshMemCount() {
+  // Only surface the counter once the player has completed at least one
+  // playthrough — first-timers shouldn't be greeted by a 0/26 score.
+  if (progress.runs() < 1) {
+    el.memCount.classList.add("hidden");
+    return;
+  }
+  el.memCount.textContent = `Memories unlocked: ${progress.unlocked()} / ${progress.total()}`;
+  el.memCount.classList.remove("hidden");
+}
 
 // ===== State navigation =====
 function gotoTitle() {
@@ -165,6 +247,7 @@ function gotoTitle() {
   el.scroll.classList.add("hidden");
   el.dialogue.classList.add("hidden");
   el.playAgain.classList.add("hidden");
+  refreshMemCount();
   // Request dungeon music; it'll start at the first user keypress
   // (browser autoplay policy) and keeps playing into the dungeon.
   music.play("dungeon");
@@ -234,6 +317,7 @@ function getTransitionAlpha() {
 function gotoEnding() {
   state = "endingScene";
   endingTimAt = performance.now();
+  progress.completeRun();
   music.play("victory");
   sfx.playVictory();
   setTimeout(() => {
@@ -292,12 +376,39 @@ function toPages(value) {
   return out;
 }
 
+// Tim's portrait (shown in the dialogue box whenever Tim is speaking).
+const TIM_SPRITE = "assets/tim.png";
+
 function buildDialogueEntries(room) {
   const entries = [];
+  const npcName = room.npc.name;
+  const makeTim = text => ({ speaker: "Tim", text, who: "tim" });
+  const makeNpc = text => ({ speaker: npcName, text, who: "npc" });
+
+  // 1) Intro back-and-forth (NPC reacts → Tim responds → NPC agrees to help).
+  //    Each step may be { npc: "..." } or { tim: "..." }; long steps still
+  //    honor `||` and auto-pagination via toPages().
+  const intro = room.npc.intro;
+  if (Array.isArray(intro)) {
+    for (const step of intro) {
+      if (step && typeof step.npc === "string") {
+        for (const t of toPages(step.npc)) entries.push(makeNpc(t));
+      } else if (step && typeof step.tim === "string") {
+        for (const t of toPages(step.tim)) entries.push(makeTim(t));
+      }
+    }
+  } else if (typeof room.npc.flavor === "string") {
+    // Back-compat: if someone still has old-style `flavor`, treat as NPC text.
+    for (const t of toPages(room.npc.flavor)) entries.push(makeNpc(t));
+  }
+
+  // 2) Tim asks the memory question.
   const question = CONTENT.questionTemplate.replace("{prompt}", room.prompt);
-  for (const t of toPages(question)) entries.push({ speaker: "Tim", text: t, flavor: false });
-  for (const t of toPages(room.npc.flavor)) entries.push({ speaker: room.npc.name, text: t, flavor: true });
-  for (const t of toPages(room.answer)) entries.push({ speaker: room.npc.name, text: t, flavor: false });
+  for (const t of toPages(question)) entries.push(makeTim(t));
+
+  // 3) NPC recounts the memory.
+  for (const t of toPages(room.answer)) entries.push(makeNpc(t));
+
   return entries;
 }
 
@@ -306,14 +417,23 @@ function openDialogue(room) {
   dialogueEntries = buildDialogueEntries(room);
   dialogueIndex = 0;
   el.dialogue.classList.remove("hidden");
-  el.portrait.style.backgroundImage = `url("${room.npc.sprite}")`;
-  showDialogueEntry();
+  showDialogueEntry(room);
 }
-function showDialogueEntry() {
+function showDialogueEntry(room) {
   const entry = dialogueEntries[dialogueIndex];
-  el.dialogue.classList.toggle("flavor", !!entry.flavor);
   el.speakerName.textContent = entry.speaker;
   el.dialogueBody.textContent = entry.text;
+
+  // Swap the portrait to match who's currently talking. Tim gets his own
+  // sprite; NPCs with `flipX` get horizontally mirrored in the portrait too
+  // so they stay facing Tim (matching their in-dungeon orientation).
+  if (entry.who === "tim") {
+    el.portrait.style.backgroundImage = `url("${TIM_SPRITE}")`;
+    el.portrait.classList.remove("flipped");
+  } else {
+    el.portrait.style.backgroundImage = `url("${room.npc.sprite}")`;
+    el.portrait.classList.toggle("flipped", !!room.npc.flipX);
+  }
 
   // Continue hint shows page progress when there's more to read.
   const hint = document.getElementById("continueHint");
@@ -328,7 +448,7 @@ function advanceDialogue(room) {
     closeDialogue(room);
   } else {
     sfx.playBlip();
-    showDialogueEntry();
+    showDialogueEntry(room);
   }
 }
 function closeDialogue(room) {
@@ -337,6 +457,7 @@ function closeDialogue(room) {
     room.npc.visited = true;
     run.collected++;
     room.doorOpen = true;
+    progress.markPromptSeen(room.prompt, room.kind);
     sfx.playChime();
     setTimeout(() => sfx.playDoor(), 520);
   }
