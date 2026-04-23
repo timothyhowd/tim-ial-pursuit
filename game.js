@@ -18,14 +18,15 @@ const PLAY_TOP = H * 0.16;
 const PLAY_BOTTOM = H * 0.88;
 
 // Where the wall actually meets the floor in the dungeon art — i.e. the
-// inner seam line, not the outer edge of the wall. Calibrated visually
+// inner seam line (not the outer edge of the wall). Calibrated visually
 // against assets/room-mid-open.png (and room1-*.png, which share the same
-// wall/floor proportions). Keeping movement inside this rect means Tim
-// stays planted on the floor instead of clipping up onto the wall top.
-const FLOOR_LEFT = W * 0.25;
-const FLOOR_RIGHT = W * 0.75;
-const FLOOR_TOP = H * 0.245;
-const FLOOR_BOTTOM = H * 0.785;
+// wall/floor proportions), then pulled IN by roughly half Tim's footprint
+// so even his sprite edges — not just his center — stay on the floor.
+// Raw inner seam positions: x ~ 0.24 / 0.78, y ~ 0.23 / 0.76.
+const FLOOR_LEFT = W * 0.28;
+const FLOOR_RIGHT = W * 0.74;
+const FLOOR_TOP = H * 0.24;
+const FLOOR_BOTTOM = H * 0.76;
 
 // East door target (where the arrow points & where you walk through)
 const E_DOOR_X = W * 0.882;
