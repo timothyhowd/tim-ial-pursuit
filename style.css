@@ -188,6 +188,25 @@ canvas#game {
   display: none;
 }
 
+.overlay .resetHint {
+  font-size: 13px;
+  color: var(--dim);
+  margin: 0;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  transition: opacity 120ms, color 120ms;
+}
+.overlay .resetHint.hidden {
+  display: none;
+}
+/* While the player is holding R, the hint ramps toward the accent color as a
+   visible countdown. The JS toggles this class on keydown and removes it on
+   keyup or cancel. */
+.overlay .resetHint.holding {
+  color: var(--accent);
+  opacity: 1;
+}
+
 .overlay .start {
   margin-top: 14px;
   font-size: 24px;
@@ -220,8 +239,11 @@ canvas#game {
 }
 
 .scroll-text {
-  font-size: 22px;
-  line-height: 1.4;
+  /* Sized to fill the parchment on both monitor and laptop screens. The
+     scroll graphic leaves generous vertical whitespace, so we can push text
+     up to ~30px without risking overflow on the current (paginated) copy. */
+  font-size: 30px;
+  line-height: 1.35;
   white-space: pre-line;
   color: #1a1a1a;
   max-width: 100%;
@@ -229,6 +251,14 @@ canvas#game {
      copy gets long. Anything beyond fits via shrink, not overflow. */
   max-height: 100%;
   overflow: hidden;
+  transition: font-size 140ms ease-out;
+}
+
+/* Oversized emphasis for standalone "punchline" scroll pages (e.g. the
+   shareholders reveal). */
+.scroll-text.big {
+  font-size: 64px;
+  line-height: 1.1;
 }
 
 .scroll-continue {

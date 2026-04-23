@@ -23,21 +23,38 @@ const CONTENT = {
   title: "Tim-ial Pursuit",
   subtitle: "Help Tim remember who he is",
 
-  // Shown on the parchment scroll when the game starts.
-  introScroll:
-    "Tim awakens in an unfamiliar room, head pounding.\n\n" +
-    "He can't remember anything.\n" +
-    "Not just the recent past, but everything that makes him who he is.\n\n" +
-    "He needs to find the pieces of himself that have been scattered.\n" +
-    "If he can do that, his purpose, his passion, and his reason for being will be restored.",
+  // Shown on the parchment scroll when the game starts. Each entry is one
+  // page; press SPACE to advance. Entries can be plain strings or objects
+  // like { text: "...", big: true } to render that page at extra-large size.
+  introScroll: [
+    "Tim feels himself awaken. His head is pounding.\n" +
+    "With a lot of effort, he opens his eyes and finds himself in an unfamiliar room.\n" +
+    "In fact, everything is unfamiliar.\n" +
+    "He doesn't remember who he is. What he loves. What makes him tick.\n" +
+    "His reason for being.",
+
+    "He spots a door on the opposite side of the room.\n" +
+    "With no other apparent options, he heads for the door.\n" +
+    "Maybe there are answers on the other side.",
+  ],
 
   // Shown on the parchment scroll after Tim escapes into the meadow.
-  endingScroll:
-    "Tim emerges into the meadow, blinking in the sun.\n\n" +
-    "With his core memories restored, he remembers his purpose on this earth.\n" +
-    "\"The shareholders! How could I have forgotten?\"\n\n" +
-    "Tim logs his imprisonment and lost consciousness as PTO-\n" +
-    "and flips open his laptop, ready once again to deliver value.",
+  endingScroll: [
+    "Tim emerges from the dungeon into a beautiful meadow.\n" +
+    "He blinks in the sun. With the return of these memories,\n" +
+    "it all comes rushing back to him.\n" +
+    "His reason for being. His purpose in life.\n" +
+    "\"Of course! How could I have forgotten?\"",
+
+    { text: "\"The shareholders!\"", big: true },
+
+    "\"This whole time, I wasn't looking for love or fulfillment.\n" +
+    "I am uniquely positioned to deliver shareholder value.\n" +
+    "I've got to get back!\"\n\n" +
+    "He logs his imprisonment and time spent recovering from amnesia as PTO.\n" +
+    "With a new spring in his step, he heads up the path\n" +
+    "and starts his commute back to the office.",
+  ],
 
   // Tim's question to each NPC. The prompts are already written in-character
   // ("Do you remember…?"), so we just speak the prompt as-is.
@@ -58,7 +75,7 @@ const CONTENT = {
       intro: [
         { npc: "The goblin twirls and pirouettes in its $500 stilettos. \"Oh, Tim! You caught me mid-routine.\"" },
         { tim: "...aren't those bad for your feet?" },
-        { npc: "The goblin grins a pointy little grin. \"Honey, I've suffered worse for fashion. What do you need?\"" },
+        { npc: "The goblin grins a pointy little grin. \"What do you need?\"" },
       ],
       maxHeight: 200,
       flipX: true,
@@ -70,7 +87,7 @@ const CONTENT = {
       intro: [
         { npc: "The uncomfortably jacked fairy coughs a swampy cough. \"Siddown, sweetie. Auntie's been waiting on you.\"" },
         { tim: "You ever thought about quitting the cigars?" },
-        { npc: "She takes a long, slow drag and blows a swamp-green smoke ring. \"I'll quit when I'm dead, baby. Ask your question.\"" },
+        { npc: "She takes a long, slow drag and blows a toxic green smoke ring. \"I'll quit when I'm dead, baby. Ask your question.\"" },
       ],
       maxHeight: 170,
       flipX: true,
@@ -80,7 +97,7 @@ const CONTENT = {
       name: "Mean Mr. Piggums",
       sprite: "assets/npc-piggums.png",
       intro: [
-        { npc: "Mr. Piggums glares at Tim with eyes that should be registered as deadly weapons. \"Ugh.\"" },
+        { npc: "Mr. Piggums glares at Tim with eyes that are registered as deadly weapons. \"Ugh.\"" },
         { tim: "I come in peace, Mr. Piggums. I just need a little help." },
         { npc: "\"Fine. Make it quick. I've got loathing to get back to.\"" },
       ],
@@ -114,7 +131,7 @@ const CONTENT = {
       name: "Blue Smiling Statue of Liberty",
       sprite: "assets/npc-statue.png",
       intro: [
-        { npc: "The Blue Smiling Statue of Liberty smiles a big blue smile. \"Did you ever feel like you're the sixth idea when five was enough?\"" },
+        { npc: "The Blue Smiling Statue of Liberty smiles a big blue smile. \"Did you ever feel like your creator was out of ideas when he made you?\"" },
         { tim: "...no?" },
         { npc: "The smile doesn't waver. \"Just me then. Okay. You want your memories? I can help.\"" },
       ],

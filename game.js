@@ -109,6 +109,10 @@ const progress = (() => {
     unlocked() { return state.personal.length + state.work.length; },
     total,
     recycleIfExhausted,
+    reset() {
+      state = empty();
+      persist();
+    },
   };
 })();
 function getDrawSize(img, maxH, maxW = 99999) {
@@ -204,8 +208,19 @@ window.addEventListener("keydown", (e) => {
     const muted = sfx.toggleMute();
     music.setMuted(muted);
   }
+  if (e.key === "r" || e.key === "R") {
+    startResetHold();
+  }
 });
-window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+window.addEventListener("keyup", (e) => {
+  keys[e.key] = false;
+  if (e.key === "r" || e.key === "R") {
+    cancelResetHold();
+  }
+});
+// If the tab loses focus mid-hold, cancel so the player can't accidentally
+// wipe progress by leaving the page with R held down.
+window.addEventListener("blur", cancelResetHold);
 function consume(k) {
   const had = justPressed.has(k);
   justPressed.delete(k);
@@ -226,18 +241,60 @@ const el = {
   playYes: document.getElementById("playYes"),
   playNo: document.getElementById("playNo"),
   memCount: document.getElementById("memCount"),
+  resetHint: document.getElementById("resetHint"),
 };
 el.titleSub.textContent = CONTENT.subtitle;
 
 function refreshMemCount() {
-  // Only surface the counter once the player has completed at least one
-  // playthrough — first-timers shouldn't be greeted by a 0/26 score.
-  if (progress.runs() < 1) {
+  // Only surface the counter (and the reset affordance) once the player has
+  // completed at least one playthrough OR unlocked at least one memory.
+  // First-timers shouldn't be greeted by a 0/26 score or a reset prompt.
+  const show = progress.runs() >= 1 || progress.unlocked() > 0;
+  if (!show) {
     el.memCount.classList.add("hidden");
+    el.resetHint.classList.add("hidden");
     return;
   }
   el.memCount.textContent = `Memories unlocked: ${progress.unlocked()} / ${progress.total()}`;
   el.memCount.classList.remove("hidden");
+  el.resetHint.textContent = "Hold R to reset progress";
+  el.resetHint.classList.remove("hidden");
+  el.resetHint.classList.remove("holding");
+}
+
+// Hold-to-confirm progress reset (only active on the title screen). The
+// player must hold R for ~1.2s; releasing or leaving the title cancels.
+const RESET_HOLD_MS = 1200;
+let resetHoldStart = 0;
+let resetHoldTimer = null;
+function startResetHold() {
+  if (state !== "title") return;
+  if (!(progress.runs() >= 1 || progress.unlocked() > 0)) return;
+  if (resetHoldTimer) return;
+  resetHoldStart = performance.now();
+  el.resetHint.classList.add("holding");
+  el.resetHint.textContent = "Keep holding R...";
+  resetHoldTimer = setTimeout(() => {
+    progress.reset();
+    refreshMemCount();
+    el.resetHint.classList.remove("holding");
+    el.resetHint.textContent = "Progress reset.";
+    sfx.playSelect();
+    // After a short beat, restore the default label (or hide if there's now
+    // nothing to reset, which there won't be).
+    setTimeout(() => refreshMemCount(), 1400);
+    resetHoldTimer = null;
+  }, RESET_HOLD_MS);
+}
+function cancelResetHold() {
+  if (!resetHoldTimer) return;
+  clearTimeout(resetHoldTimer);
+  resetHoldTimer = null;
+  el.resetHint.classList.remove("holding");
+  // Restore the default label so it's clear the cancel worked.
+  if (!el.resetHint.classList.contains("hidden")) {
+    el.resetHint.textContent = "Hold R to reset progress";
+  }
 }
 
 // ===== State navigation =====
@@ -254,6 +311,7 @@ function gotoTitle() {
 }
 
 function gotoIntroScroll() {
+  cancelResetHold();
   el.title.classList.add("hidden");
   el.playAgain.classList.add("hidden");
   startRun();
@@ -265,13 +323,41 @@ function gotoIntroScroll() {
   state = "introScroll";
 }
 
-function showScroll(text, onContinue) {
-  el.scrollText.textContent = text;
+// Scroll pagination state. `showScroll` accepts either a single string or an
+// array of entries; entries may themselves be strings or { text, big }
+// objects (where `big: true` renders that page at emphasis size).
+let scrollPages = [];
+let scrollPageIndex = 0;
+
+function showScroll(value, onContinue) {
+  scrollPages = Array.isArray(value) ? value.slice() : [value];
+  scrollPageIndex = 0;
   el.scroll.classList.remove("hidden");
   pendingScrollContinue = onContinue;
+  renderScrollPage();
+}
+function renderScrollPage() {
+  const entry = scrollPages[scrollPageIndex];
+  const isObj = entry && typeof entry === "object";
+  const text = isObj ? entry.text : String(entry || "");
+  const big = !!(isObj && entry.big);
+  el.scrollText.textContent = text;
+  el.scrollText.classList.toggle("big", big);
+  const hint = document.querySelector("#scroll .scroll-continue");
+  if (hint) {
+    const isLast = scrollPageIndex === scrollPages.length - 1;
+    hint.textContent = isLast ? "[ press SPACE to continue ]" : "[ press SPACE for more \u2192 ]";
+  }
 }
 function dismissScroll() {
+  if (scrollPageIndex < scrollPages.length - 1) {
+    scrollPageIndex++;
+    sfx.playBlip();
+    renderScrollPage();
+    return;
+  }
   el.scroll.classList.add("hidden");
+  el.scrollText.classList.remove("big");
   if (pendingScrollContinue) {
     const cb = pendingScrollContinue;
     pendingScrollContinue = null;
@@ -314,6 +400,11 @@ function getTransitionAlpha() {
   return transition.phase === "out" ? t : 1 - t;
 }
 
+// Delay before the ending scroll auto-pops over the meadow scene. Long enough
+// to hear the victory sting and see Tim arrive; short enough that pressing
+// SPACE rarely feels necessary.
+const ENDING_SCROLL_DELAY_MS = 1600;
+
 function gotoEnding() {
   state = "endingScene";
   endingTimAt = performance.now();
@@ -324,7 +415,7 @@ function gotoEnding() {
     if (state !== "endingScene") return;
     showScroll(CONTENT.endingScroll, () => gotoPlayAgainMenu());
     state = "endingScroll";
-  }, 2600);
+  }, ENDING_SCROLL_DELAY_MS);
 }
 
 function gotoPlayAgainMenu() {
