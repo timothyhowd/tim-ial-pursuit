@@ -26,7 +26,7 @@ const CONTENT = {
   // Displayed bottom-left of the title screen. Bump manually on release;
   // use semver (major.minor.patch) — minor for new content/features, patch
   // for bug fixes and copy tweaks.
-  version: "v1.0.0",
+  version: "v1.1.0",
 
   // Credits screen. Each entry is one block — a role (rendered uppercase
   // in accent color) and one or more names. Add/rearrange freely.
