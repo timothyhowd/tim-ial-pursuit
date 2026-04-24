@@ -79,11 +79,26 @@ const CONTENT = {
   questionTemplate: "{prompt}",
 
   // ----------------------------------------------------------
-  // The six dungeon-dwellers.
+  // The dungeon-dwellers.
   //
-  // Each NPC has an `intro`: a short back-and-forth played BEFORE Tim
-  // asks his question. Each step is either { npc: "..." } or { tim: "..." }.
-  // Use `||` inside a step to paginate further if it runs long.
+  // Each playthrough picks 6 of these at random (preferring NPCs the
+  // player hasn't met in a previous run — see pickPlaythroughNpcs in
+  // game.js). To add a new character, just append another entry here
+  // with the fields below; the pool can be any size >= 6 and the game
+  // will shuffle it into 6 slots per run.
+  //
+  // Required fields:
+  //   id        — unique string, also the localStorage key for "seen"
+  //   name      — label shown in the "Talk to {name}" tooltip and
+  //               sometimes in portrait captions
+  //   sprite    — path to the PNG under assets/
+  //   intro     — 1-N dialogue steps played BEFORE Tim's question; each
+  //               step is either { npc: "..." } or { tim: "..." }. Use
+  //               "||" inside a step to paginate further if it runs long.
+  //   maxHeight — render height in px (bigger = bigger on screen)
+  //   flipX     — true if the sprite art faces LEFT (so we mirror it to
+  //               face Tim coming from the west). False / omitted for
+  //               sprites already facing right.
   // ----------------------------------------------------------
   npcs: [
     {
@@ -154,6 +169,19 @@ const CONTENT = {
         { npc: "The smile doesn't waver. \"Just me then. Okay. You want your memories? I can help.\"" },
       ],
       maxHeight: 220,
+    },
+    {
+      id: "stan",
+      name: "Stan",
+      sprite: "assets/npc-stan.png",
+      intro: [
+        { npc: "A hulking red demon — tusks, glowing yellow eyes, little skull on his belt — straightens a HELLO MY NAME IS sticker on his chest. \"Oh, hey Tim! Nice to finally meet ya.\"" },
+        { tim: "Likewise, Satan! Really appreciate you making the—" },
+        { npc: "He taps the sticker, slowly. \"STAN. || It's STAN. || That's literally why I wear the nametag, buddy. People just look at me and assume.\"" },
+        { tim: "Oh gosh. I'm so sorry, Stan. That's embarrassing." },
+        { npc: "\"Happens all the time. Sometimes twice a day. Anyway — what can Stan do for ya?\"" },
+      ],
+      maxHeight: 250,
     },
   ],
 

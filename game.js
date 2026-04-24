@@ -101,7 +101,7 @@ function softClamp(current, next, min, max) {
 const progress = (() => {
   const KEY = "tim-ial-pursuit:progress:v1";
   const total = () => CONTENT.personalPrompts.length + CONTENT.workPrompts.length;
-  const empty = () => ({ personal: [], work: [], runs: 0 });
+  const empty = () => ({ personal: [], work: [], runs: 0, npcs: [] });
 
   // Load the freshest state from localStorage. Called on module init AND
   // before every read used for UI (title counter, play-again hint) so a
@@ -114,6 +114,7 @@ const progress = (() => {
         return {
           personal: Array.isArray(parsed.personal) ? parsed.personal : [],
           work: Array.isArray(parsed.work) ? parsed.work : [],
+          npcs: Array.isArray(parsed.npcs) ? parsed.npcs : [],
           runs: Number.isFinite(parsed.runs) ? parsed.runs : 0,
         };
       }
@@ -129,7 +130,7 @@ const progress = (() => {
 
   // Merge another tab's state into ours rather than blindly overwriting,
   // so no progress is lost if both tabs happened to advance. Prompts are
-  // matched by exact text.
+  // matched by exact text, NPCs by id.
   const mergeFromStorage = () => {
     const fresh = load();
     const mergeList = (a, b) => {
@@ -140,6 +141,7 @@ const progress = (() => {
     state = {
       personal: mergeList(state.personal, fresh.personal),
       work: mergeList(state.work, fresh.work),
+      npcs: mergeList(state.npcs, fresh.npcs),
       runs: Math.max(state.runs, fresh.runs),
     };
     persist();
@@ -150,6 +152,10 @@ const progress = (() => {
   // noticeably sooner than the larger pool (work, 16), which is exactly what
   // we want to avoid. Now we keep accumulating seen-state until every prompt
   // has been visited at least once, then start the whole cycle fresh.
+  //
+  // NPC pool is recycled independently: when every NPC in CONTENT.npcs has
+  // been visited at least once, wipe the seen-NPC list so future runs can
+  // start surfacing repeats (still shuffled).
   const recycleIfAllExhausted = () => {
     const allPersonal = state.personal.length >= CONTENT.personalPrompts.length;
     const allWork = state.work.length >= CONTENT.workPrompts.length;
@@ -158,14 +164,26 @@ const progress = (() => {
       state.work = [];
       persist();
     }
+    if (state.npcs.length >= CONTENT.npcs.length) {
+      state.npcs = [];
+      persist();
+    }
   };
 
   return {
     seenSet(kind) { return new Set(state[kind] || []); },
+    seenNpcIds() { return new Set(state.npcs || []); },
     markPromptSeen(prompt, kind) {
       if (!state[kind]) return;
       if (!state[kind].includes(prompt)) {
         state[kind].push(prompt);
+        persist();
+      }
+    },
+    markNpcSeen(id) {
+      if (!id) return;
+      if (!state.npcs.includes(id)) {
+        state.npcs.push(id);
         persist();
       }
     },
@@ -260,12 +278,40 @@ function pickPlaythroughPrompts() {
   return [...personalSlots, ...workSlots];
 }
 
+// Pick the NPCs for a single playthrough. Each run always staffs 6 rooms,
+// but the pool in CONTENT.npcs can be any size >= 1. Prefer NPCs the player
+// hasn't met yet; only top up from already-met NPCs when the unseen pool
+// runs dry. If the pool has fewer than 6 unique NPCs total, we duplicate
+// from the shuffled pool to fill the slots (handy for early development —
+// the real offsite build should keep the pool at 6+).
+function pickPlaythroughNpcs() {
+  const pool = CONTENT.npcs;
+  const seen = progress.seenNpcIds();
+  const unseen = shuffle(pool.filter(n => !seen.has(n.id)));
+  const seenNpcs = shuffle(pool.filter(n => seen.has(n.id)));
+  const picked = [];
+  for (const n of unseen) {
+    if (picked.length >= 6) break;
+    picked.push(n);
+  }
+  for (const n of seenNpcs) {
+    if (picked.length >= 6) break;
+    picked.push(n);
+  }
+  // Defensive: if the whole pool is smaller than 6, loop the shuffled pool.
+  while (picked.length < 6 && pool.length > 0) {
+    picked.push(pool[picked.length % pool.length]);
+  }
+  return picked;
+}
+
 function startRun() {
-  // Only reset when BOTH categories are fully seen. This keeps personal from
-  // recycling before the player has also seen all of work.
+  // Only reset when BOTH categories are fully seen (and the NPC pool, if it
+  // too is fully exhausted). Prompts and NPCs share a recycle call but
+  // evaluate their pools independently.
   progress.recycleIfAllExhausted();
   const prompts = shuffle(pickPlaythroughPrompts());
-  const npcOrder = shuffle(CONTENT.npcs);
+  const npcOrder = pickPlaythroughNpcs();
 
   // Room 0 = empty tutorial. Rooms 1-6 = NPCs.
   const tutorial = { isTutorial: true, doorOpen: false };
@@ -733,6 +779,7 @@ function closeDialogue(room) {
     run.collected++;
     room.doorOpen = true;
     progress.markPromptSeen(room.prompt, room.kind);
+    progress.markNpcSeen(room.npc.id);
     sfx.playChime();
     setTimeout(() => sfx.playDoor(), 520);
   }
